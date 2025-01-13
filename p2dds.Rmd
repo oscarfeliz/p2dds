@@ -21,25 +21,26 @@ library(XML)
 
 # Paso 1: Descargar la página web
 url <- "https://www.mediawiki.org/wiki/MediaWiki"
-response <- GET(url)
+respuesta <- GET(url)
 
 # Comprobar el estado de la respuesta
-if (status_code(response) == 200) {
+if (status_code(respuesta) == 200) {
   cat("Página descargada correctamente.\n")
 } else {
   stop("Error al descargar la página. Código de estado: ", status_code(response))
 }
 
 # Paso 2: Convertir HTML a formato XML
-html_content <- content(response, as = "text", encoding = "UTF-8")
+html_content <- content(respuesta, as = "text", encoding = "UTF-8")
 xml_content <- htmlParse(html_content, encoding = "UTF-8")
+```
 
-# Paso 3: Guardar el contenido en un objeto
-# Puedes inspeccionar el XML para determinar qué partes quieres analizar
-print(summary(xml_content))
+### 2. Analizar el contenido de la web, buscando el título de la página (que en HTML se etiqueta como “title”).
 
-# Paso 4: (Opcional) Guardar el contenido en un archivo RDS para análisis posterior
-saveRDS(xml_content, "mediawiki_page.rds")
-cat("Contenido guardado como 'mediawiki_page.rds'\n")
+```{r}
+# Paso 3: Extraer el título de la página usando XPath
+page_title <- xpathSApply(xml_content, "//title", xmlValue)
 
+# Mostrar el título
+cat("El título de la página es:\n", page_title, "\n")
 ```
