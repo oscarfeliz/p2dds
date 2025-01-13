@@ -1,0 +1,45 @@
+---
+title: "p2dds"
+output: html_document
+date: "2025-01-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### 1. Descargar la página web de la URL indicada, y almacenarlo en un formato de R apto para ser tratado.
+
+```{r}
+# Instalar los paquetes necesarios si no están instalados
+if (!require(httr)) install.packages("httr")
+if (!require(XML)) install.packages("XML")
+
+# Cargar las librerías
+library(httr)
+library(XML)
+
+# Paso 1: Descargar la página web
+url <- "https://www.mediawiki.org/wiki/MediaWiki"
+response <- GET(url)
+
+# Comprobar el estado de la respuesta
+if (status_code(response) == 200) {
+  cat("Página descargada correctamente.\n")
+} else {
+  stop("Error al descargar la página. Código de estado: ", status_code(response))
+}
+
+# Paso 2: Convertir HTML a formato XML
+html_content <- content(response, as = "text", encoding = "UTF-8")
+xml_content <- htmlParse(html_content, encoding = "UTF-8")
+
+# Paso 3: Guardar el contenido en un objeto
+# Puedes inspeccionar el XML para determinar qué partes quieres analizar
+print(summary(xml_content))
+
+# Paso 4: (Opcional) Guardar el contenido en un archivo RDS para análisis posterior
+saveRDS(xml_content, "mediawiki_page.rds")
+cat("Contenido guardado como 'mediawiki_page.rds'\n")
+
+```
