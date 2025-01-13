@@ -44,3 +44,51 @@ page_title <- xpathSApply(xml_content, "//title", xmlValue)
 # Mostrar el título
 cat("El título de la página es:\n", page_title, "\n")
 ```
+
+### 3. Analizar el contenido de la web, buscando todos los enlaces (que en HTML se etiquetan como “a”), buscando el texto del enlace, así como la URL.
+
+```{r}
+# Paso 3: Extraer los enlaces (<a>) y sus atributos
+# Extraer el texto del enlace
+link_textos <- xpathSApply(xml_content, "//a", xmlValue)
+
+# Extraer los URLs del atributo href
+link_urls <- xpathSApply(xml_content, "//a/@href")
+
+# Paso 4: Manejar posibles valores NULL en los resultados
+link_textos[is.null(link_textos)] <- NA
+link_urls[is.null(link_urls)] <- NA
+
+# Paso 5: Combinar los textos y URLs en un data frame
+links_df <- data.frame(
+  Text = link_textos,
+  URL = link_urls,
+  stringsAsFactors = FALSE
+)
+
+# Mostrar una vista previa de los enlaces extraídos
+#print(head(links_df))
+
+# Paso 6: (Opcional) Guardar los enlaces en un archivo CSV
+#write.csv(links_df, "extracted_links.csv", row.names = FALSE)
+#cat("Los enlaces extraídos se han guardado en 'extracted_links.csv'\n")
+```
+
+### 
+### 4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
+
+```{r}
+# Paso 6: Contar ocurrencias de cada combinación de texto y enlace
+link_summary <- as.data.frame(table(links_df$Text, links_df$URL))
+colnames(link_summary) <- c("Text", "URL", "Count")
+
+# Filtrar solo los enlaces con recuentos mayores a 0
+link_summary <- link_summary[link_summary$Count > 0, ]
+
+# Mostrar la tabla resultante
+print(head(link_summary))
+
+# Paso 7: (Opcional) Guardar la tabla en un archivo CSV
+#write.csv(link_summary, "link_summary.csv", row.names = FALSE)
+#cat("Resumen de enlaces guardado en 'link_summary.csv'\n")
+```
