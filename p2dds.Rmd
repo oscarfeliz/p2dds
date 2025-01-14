@@ -75,7 +75,7 @@ print(head(links_df))
 ```
 
 ### 
-### 4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
+4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
 
 ```{r}
 # Paso 6: Contar ocurrencias de cada combinación de texto y enlace
