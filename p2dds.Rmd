@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### 1. Descargar la página web de la URL indicada, y almacenarlo en un formato de R apto para ser tratado.
 
-```{r}
+```{r, attr.warning=F}
 # Instalar los paquetes necesarios si no están instalados
 if (!require(httr)) install.packages("httr")
 if (!require(XML)) install.packages("XML")
@@ -18,6 +18,7 @@ if (!require(XML)) install.packages("XML")
 # Cargar las librerías
 library(httr)
 library(XML)
+library(dplyr)
 
 # Paso 1: Descargar la página web
 url <- "https://www.mediawiki.org/wiki/MediaWiki"
@@ -95,7 +96,7 @@ print(head(link_summary))
 ### 5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
 
 ```{r}
-# Paso 4: Resolver URLs relativas y absolutas
+# Resolver URLs relativas y absolutas
 base_url <- "https://www.mediawiki.org"
 resolve_url <- function(link) {
   if (is.na(link)) return(NA)
@@ -114,49 +115,18 @@ resolve_url <- function(link) {
 
 resolved_urls <- sapply(link_urls, resolve_url)
 
-# Paso 5: Crear un data.frame con texto y URLs
+# Crear un data.frame con texto y URLs
 links_df <- data.frame(
   Text = link_texts,
   URL = resolved_urls,
   stringsAsFactors = FALSE
 )
 
-# Paso 6: Contar repeticiones de cada enlace
-link_summary <- as.data.frame(table(links_df$Text, links_df$URL))
+# Contar repeticiones de cada enlace
+link_summary <- count(links_df, Text, URL)
 colnames(link_summary) <- c("Text", "URL", "Seen")
 
-# Paso 7: Comprobar el estado HTTP de cada URL
-# Asegurarse de que las URLs sean cadenas
-link_summary$Text <- as.character(link_summary$Text)
-link_summary$URL <- as.character(link_summary$URL)
-
-# Función para verificar el estado HTTP
-check_status <- function(link) {
-  if (is.na(link) || link == "") return(NA)  # Manejo de NAs y cadenas vacías
-  
-  result <- tryCatch({
-    head_response <- HEAD(link)  # Realizamos la consulta HEAD
-    status_code(head_response)  # Extraemos el código de estado
-  }, error = function(e) {
-    return(NA)  # En caso de error, devolvemos NA
-  })
-  
-  return(result)  # Devolvemos el código de estado
-}
-
-# Aplicar la función a las URLs
-link_summary$Status <- sapply(link_summary$URL, check_status)
-
-# Mostrar el resultado final, asegurando que los enlaces sigan siendo cadenas
-link_summary$URL <- as.character(link_summary$URL)
-link_summary$Status <- as.character(link_summary$Status)
-
-# Mostrar el data.frame corregido
+# Mostrar resultado
 print(link_summary)
-
-
-# Paso 8: Guardar en un archivo CSV
-#write.csv(link_summary, "link_summary_with_status.csv", row.names = FALSE)
-#cat("Resumen con estados HTTP guardado en 'link_summary_with_status.csv'\n")
 
 ```
