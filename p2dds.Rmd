@@ -74,8 +74,7 @@ print(head(links_df))
 #cat("Los enlaces extraídos se han guardado en 'extracted_links.csv'\n")
 ```
 
-### 
-4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
+### 4. Generar una tabla con cada enlace encontrado, indicando el texto que acompaña el enlace, y el número de veces que aparece un enlace con ese mismo objetivo.
 
 ```{r}
 # Paso 6: Contar ocurrencias de cada combinación de texto y enlace
@@ -93,8 +92,7 @@ print(head(link_summary))
 #cat("Resumen de enlaces guardado en 'link_summary.csv'\n")
 ```
 
-### 
-5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
+### 5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
 
 ```{r}
 # Paso 4: Resolver URLs relativas y absolutas
@@ -128,23 +126,34 @@ link_summary <- as.data.frame(table(links_df$Text, links_df$URL))
 colnames(link_summary) <- c("Text", "URL", "Seen")
 
 # Paso 7: Comprobar el estado HTTP de cada URL
+# Asegurarse de que las URLs sean cadenas
+link_summary$Text <- as.character(link_summary$Text)
+link_summary$URL <- as.character(link_summary$URL)
+
+# Función para verificar el estado HTTP
 check_status <- function(link) {
-  if (is.na(link)) return(NA)
-  Sys.sleep(2)  # Pausa para evitar ser baneados
+  if (is.na(link) || link == "") return(NA)  # Manejo de NAs y cadenas vacías
+  
   result <- tryCatch({
-    head_response <- HEAD(link)
-    status_code(head_response)
+    head_response <- HEAD(link)  # Realizamos la consulta HEAD
+    status_code(head_response)  # Extraemos el código de estado
   }, error = function(e) {
-    return(NA)  # Error al consultar la URL
+    return(NA)  # En caso de error, devolvemos NA
   })
-  return(result)
+  
+  return(result)  # Devolvemos el código de estado
 }
 
-# Aplicar la función a todas las URLs
+# Aplicar la función a las URLs
 link_summary$Status <- sapply(link_summary$URL, check_status)
 
-# Mostrar la tabla resultante
+# Mostrar el resultado final, asegurando que los enlaces sigan siendo cadenas
+link_summary$URL <- as.character(link_summary$URL)
+link_summary$Status <- as.character(link_summary$Status)
+
+# Mostrar el data.frame corregido
 print(link_summary)
+
 
 # Paso 8: Guardar en un archivo CSV
 #write.csv(link_summary, "link_summary_with_status.csv", row.names = FALSE)
