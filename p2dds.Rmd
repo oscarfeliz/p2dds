@@ -21,17 +21,17 @@ library(XML)
 
 # Paso 1: Descargar la página web
 url <- "https://www.mediawiki.org/wiki/MediaWiki"
-respuesta <- GET(url)
+response <- GET(url)
 
 # Comprobar el estado de la respuesta
-if (status_code(respuesta) == 200) {
+if (status_code(response) == 200) {
   cat("Página descargada correctamente.\n")
 } else {
   stop("Error al descargar la página. Código de estado: ", status_code(response))
 }
 
 # Paso 2: Convertir HTML a formato XML
-html_content <- content(respuesta, as = "text", encoding = "UTF-8")
+html_content <- content(response, as = "text", encoding = "UTF-8")
 xml_content <- htmlParse(html_content, encoding = "UTF-8")
 ```
 
@@ -42,7 +42,7 @@ xml_content <- htmlParse(html_content, encoding = "UTF-8")
 page_title <- xpathSApply(xml_content, "//title", xmlValue)
 
 # Mostrar el título
-cat("El título de la página es:\n", page_title, "\n")
+cat("El título de la página es:", page_title, "\n")
 ```
 
 ### 3. Analizar el contenido de la web, buscando todos los enlaces (que en HTML se etiquetan como “a”), buscando el texto del enlace, así como la URL.
@@ -50,24 +50,24 @@ cat("El título de la página es:\n", page_title, "\n")
 ```{r}
 # Paso 3: Extraer los enlaces (<a>) y sus atributos
 # Extraer el texto del enlace
-link_textos <- xpathSApply(xml_content, "//a", xmlValue)
+link_texts <- xpathSApply(xml_content, "//a", xmlValue)
 
 # Extraer los URLs del atributo href
 link_urls <- xpathSApply(xml_content, "//a/@href")
 
 # Paso 4: Manejar posibles valores NULL en los resultados
-link_textos[is.null(link_textos)] <- NA
+link_texts[is.null(link_texts)] <- NA
 link_urls[is.null(link_urls)] <- NA
 
 # Paso 5: Combinar los textos y URLs en un data frame
 links_df <- data.frame(
-  Text = link_textos,
+  Text = link_texts,
   URL = link_urls,
   stringsAsFactors = FALSE
 )
 
 # Mostrar una vista previa de los enlaces extraídos
-#print(head(links_df))
+print(head(links_df))
 
 # Paso 6: (Opcional) Guardar los enlaces en un archivo CSV
 #write.csv(links_df, "extracted_links.csv", row.names = FALSE)
@@ -91,4 +91,63 @@ print(head(link_summary))
 # Paso 7: (Opcional) Guardar la tabla en un archivo CSV
 #write.csv(link_summary, "link_summary.csv", row.names = FALSE)
 #cat("Resumen de enlaces guardado en 'link_summary.csv'\n")
+```
+
+### 
+5. Para cada enlace, seguirlo e indicar si está activo (podemos usar el código de status HTTP al hacer una petición a esa URL).
+
+```{r}
+# Paso 4: Resolver URLs relativas y absolutas
+base_url <- "https://www.mediawiki.org"
+resolve_url <- function(link) {
+  if (is.na(link)) return(NA)
+  if (grepl("^http", link)) {
+    return(link)  # URL absoluta
+  } else if (grepl("^//", link)) {
+    return(paste0("https:", link))  # Subdominio
+  } else if (grepl("^/", link)) {
+    return(paste0(base_url, link))  # URL relativa
+  } else if (grepl("^#", link)) {
+    return(url)  # Mismo documento, diferente altura
+  } else {
+    return(NA)  # No válido
+  }
+}
+
+resolved_urls <- sapply(link_urls, resolve_url)
+
+# Paso 5: Crear un data.frame con texto y URLs
+links_df <- data.frame(
+  Text = link_texts,
+  URL = resolved_urls,
+  stringsAsFactors = FALSE
+)
+
+# Paso 6: Contar repeticiones de cada enlace
+link_summary <- as.data.frame(table(links_df$Text, links_df$URL))
+colnames(link_summary) <- c("Text", "URL", "Seen")
+
+# Paso 7: Comprobar el estado HTTP de cada URL
+check_status <- function(link) {
+  if (is.na(link)) return(NA)
+  Sys.sleep(2)  # Pausa para evitar ser baneados
+  result <- tryCatch({
+    head_response <- HEAD(link)
+    status_code(head_response)
+  }, error = function(e) {
+    return(NA)  # Error al consultar la URL
+  })
+  return(result)
+}
+
+# Aplicar la función a todas las URLs
+link_summary$Status <- sapply(link_summary$URL, check_status)
+
+# Mostrar la tabla resultante
+print(link_summary)
+
+# Paso 8: Guardar en un archivo CSV
+#write.csv(link_summary, "link_summary_with_status.csv", row.names = FALSE)
+#cat("Resumen con estados HTTP guardado en 'link_summary_with_status.csv'\n")
+
 ```
